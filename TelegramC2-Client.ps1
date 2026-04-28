@@ -1029,5 +1029,3 @@ $messages=ReceiveMSG
         }
     }
 }
-
-Pause
