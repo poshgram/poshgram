@@ -1,14 +1,4 @@
 <# ============================================= Beigeworm's Telegram C2 Client ========================================================
-
-SYNOPSIS
-Using a Telegram Bot's Chat to Act as a Command and Control Platform.
-
-INFORMATION
-This script will wait until it is called in chat by the computer name to take commands from telegram.
-A list of Modules can be accessed by typing 'options' in chat, or you can use the chat to act simply as a reverse shell.
-
-SEE README FOR MORE INFO
-#>
 <# Some more random lines
 Nonsense
 Nothing
